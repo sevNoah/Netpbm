@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -114,53 +115,41 @@ func (pgm *PGM) Save(filename string) error {
 		return err
 	}
 	defer file.Close()
-
 	writer := bufio.NewWriter(file)
-
-	// Write the magic number, dimensions, and max value
-	_, err = fmt.Fprintf(writer, "%s\n%d %d\n%d\n", pgm.magicNumber, pgm.width, pgm.height, pgm.max)
-	if err != nil {
-		return fmt.Errorf("erreur d'écriture de l'en-tête : %v", err)
-	}
-
+	fmt.Fprint(writer, pgm.magicNumber+"\n")
+	fmt.Fprintf(writer, "%d %d\n", pgm.width, pgm.height)
+	fmt.Fprintf(writer, "%d\n", pgm.max)
+	writer.Flush()
 	if pgm.magicNumber == "P2" {
-		// Write P2 format (ASCII)
+		for y, row := range pgm.data {
+			for i, pixel := range row {
+				xtra := " "
+				if i == len(row)-1 {
+					xtra = ""
+				}
+				//Here i convert uint8 to an int in order to finally convert it to a string
+				fmt.Fprint(writer, strconv.Itoa(int(pixel))+xtra)
+			}
+			if y != len(pgm.data)-1 {
+				fmt.Fprintln(writer, "")
+			}
+		}
+		writer.Flush()
+	} else if pgm.magicNumber == "P5" {
 		for _, row := range pgm.data {
 			for _, pixel := range row {
-				_, err := fmt.Fprintf(writer, "%d ", pixel) // Utilisez la valeur réelle du pixel
+				//We can simply convert it to []byte
+				_, err = file.Write([]byte{pixel})
 				if err != nil {
-					return fmt.Errorf("erreur d'écriture des données des pixels : %v", err)
+					return fmt.Errorf("error writing pixel data: %v", err)
 				}
-				fmt.Printf("%d ", pixel) // Ajoutez cette ligne pour imprimer la valeur du pixel
 			}
-			_, err := writer.WriteString("\n")
-			if err != nil {
-				return fmt.Errorf("erreur d'écriture des données des pixels : %v", err)
-			}
-			fmt.Println() // Ajoutez cette ligne pour passer à la ligne suivante dans l'impression
-		}
-
-	} else if pgm.magicNumber == "P5" {
-		// Write P5 format (binary)
-		for _, row := range pgm.data {
-			// Convertissez chaque pixel en un tableau d'octets (uint8)
-			data := make([]uint8, pgm.width*pgm.height)
-			for i, pixel := range row {
-				data[i] = uint8(pixel)
-				fmt.Printf("%d ", pixel) // Ajoutez cette ligne pour imprimer la valeur du pixel
-			}
-
-			// Utilisez binary.Write avec le type []uint8
-			err := binary.Write(writer, binary.BigEndian, data)
-			if err != nil {
-				return fmt.Errorf("erreur d'écriture des données des pixels : %v", err)
-			}
-			fmt.Println() // Ajoutez cette ligne pour passer à la ligne suivante dans l'impression
 		}
 	}
-	return writer.Flush()
+	return nil
 }
 
+// Invert inverts the colors of the PGM image.
 func (pgm *PGM) Invert() {
 	maxUint8 := uint8(pgm.max)
 
@@ -172,6 +161,7 @@ func (pgm *PGM) Invert() {
 	}
 }
 
+// Flip flips the PGM image horizontally.
 func (pgm *PGM) Flip() {
 	for y := 0; y < pgm.height; y++ {
 		left := 0
@@ -186,6 +176,7 @@ func (pgm *PGM) Flip() {
 	}
 }
 
+// Flop flops the PGM image vertically.
 func (pgm *PGM) Flop() {
 	top := 0
 	bottom := pgm.height - 1
@@ -201,10 +192,12 @@ func (pgm *PGM) Flop() {
 	}
 }
 
+// SetMagicNumber sets the magic number of the PGM image.
 func (pgm *PGM) SetMagicNumber(magicNumber string) {
 	pgm.magicNumber = magicNumber
 }
 
+// SetMaxValue sets the max value of the PGM image.
 func (pgm *PGM) SetMaxValue(maxValue uint8) {
 	for y, _ := range pgm.data {
 		for x, _ := range pgm.data[y] {
@@ -218,6 +211,7 @@ func (pgm *PGM) SetMaxValue(maxValue uint8) {
 	pgm.max = uint8(maxValue)
 }
 
+// Rotate90CW rotates the PGM image 90° clockwise.
 func (pgm *PGM) Rotate90CW() {
 	// Créer une nouvelle image avec les dimensions inversées
 	rotatedData := make([][]uint8, pgm.width)
@@ -239,6 +233,7 @@ func (pgm *PGM) Rotate90CW() {
 	pgm.data = rotatedData
 }
 
+// ToPBM converts the PGM image to PBM.
 func (pgm *PGM) ToPBM() *PBM {
 	// Créer une nouvelle instance de la struct PBM
 	pbmInstance := &PBM{

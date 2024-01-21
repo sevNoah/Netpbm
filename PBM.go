@@ -8,14 +8,13 @@ import (
 	"strings"
 )
 
-// Structure pour représenter l'image PBM
 type PBM struct {
 	data          [][]bool
 	width, height int
 	magicNumber   string
 }
 
-// Fonction pour lire une image PBM à partir d'un fichier
+// ReadPBM reads a PBM image from a file and returns a struct that represents the image.
 func ReadPBM(filename string) (*PBM, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -100,14 +99,17 @@ func ReadPBM(filename string) (*PBM, error) {
 	return &PBM{data, width, height, magicNumber}, nil
 }
 
+// Size returns the width and height of the image.
 func (pbm *PBM) Size() (int, int) {
 	return pbm.width, pbm.height
 }
 
+// At returns the value of the pixel at (x, y).
 func (pbm *PBM) At(x, y int) bool {
 	return pbm.data[y][x]
 }
 
+// Set sets the value of the pixel at (x, y).
 func (pbm *PBM) Set(x, y int, value bool) {
 	pbm.data[y][x] = value
 }
@@ -181,6 +183,7 @@ func (pbm *PBM) Save(filename string) error {
 	return nil
 }
 
+// Invert inverts the colors of the PBM image.
 func (pbm *PBM) Invert() {
 	for i := 0; i < pbm.height; i++ {
 		for j := 0; j < pbm.width; j++ {
