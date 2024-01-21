@@ -438,3 +438,13 @@ func (ppm *PPM) DrawFilledTriangle(p1, p2, p3 Point, color Pixel) {
 	//Draw a final line between the last position of p1 (should be at p2 at this point) and p3
 	ppm.DrawLine(p3, p1, color)
 }
+
+// DrawPolygon draws a polygon.
+func (ppm *PPM) DrawPolygon(points []Point, color Pixel) {
+	//Link the points with a line
+	for i := 0; i < len(points)-1; i++ {
+		ppm.DrawLine(points[i], points[i+1], color)
+	}
+	//Link the last and the first point with a line
+	ppm.DrawLine(points[len(points)-1], points[0], color)
+}
